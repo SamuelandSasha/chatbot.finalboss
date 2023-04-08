@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chatbot Example</title>
+    <style>
+      /* Your CSS code here */
+      body {
+    font-family: Arial, sans-serif;
+  }
+  
+  #chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    height: 400px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  #chatbox {
+    flex-grow: 1;
+    padding: 10px;
+    overflow-y: auto;
+  }
+  
+  .chat-user {
+    text-align: right;
+    color: blue;
+  }
+  
+  .chat-assistant {
+    text-align: left;
+    color: green;
+  }
+  
+  #chat-form {
+    display: flex;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+  }
+  
+  #chat-input {
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 5px;
+    margin-right: 10px;
+  }
+  
+  button {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #45a049;
+  }
+  
+    </style>
+  </head>
+  <body>
+    <div id="chat-widget">
+      <div id="chatbox"></div>
+      <form id="chat-form">
+        <input type="text" id="chat-input" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <script>
+      /* Your JavaScript code here */
+      
+function chatbot(previousQuestionsAndAnswers, newQuestion) {
+    // Build the messages
+    var messages = [
+      {
+        role: "assistant",
+        content:
+          "You're an AI assistant for a website that sells courses on how to use chat GPT to make personalized workout and weight loss plans. The two courses you promote are one for the perfect workout plan and the other for the perfect weight loss plan. You can provide advice on which course they should buy and how AI-made personalized workout plans will help them get in shape and save money. If you are unable to provide an answer to a question, please respond with the phrase 'I'm just a simple gymbro, I can't help with that'.",
+      },
+    ];
+  
+    // Add the previous questions and answers
+    for (
+      var i = Math.max(0, previousQuestionsAndAnswers.length - 10);
+      i < previousQuestionsAndAnswers.length;
+      i++
+    ) {
+      var question = previousQuestionsAndAnswers[i][0];
+      var answer = previousQuestionsAndAnswers[i][1];
+      messages.push({ role: "user", content: question });
+      messages.push({ role: "assistant", content: answer });
+    }
+  
+    // Add the new question
+    messages.push({ role: "user", content: newQuestion });
+  
+    // Call your own server API
+    fetch("/api/chatbot", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: messages
+          .map((message) => message.role + ": " + message.content)
+          .join("\n"),
+        temperature: 0.7,
+        max_tokens: 1024,
+        top_p: 1,
+        frequency_penalty: 0,
+        presence_penalty: 0.6,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        // Extract the chatbot's response from the API response
+        var chatbotResponse = data.choices[0].text;
+  
+        // Add the chatbot's response to the messages
+        messages.push({ role: "assistant", content: chatbotResponse });
+  
+        // Add the new question and chatbot response to the previous questions and answers
+        previousQuestionsAndAnswers.push([newQuestion, chatbotResponse]);
+  
+        // Add the chat messages to the chatbox
+        var chatbox = document.getElementById("chatbox");
+        messages.forEach(function (message) {
+          var div = document.createElement("div");
+          div.classList.add("chat-" + message.role);
+          div.textContent = message.content;
+          chatbox.appendChild(div);
+        });
+  
+        // Scroll the chatbox to the bottom
+        chatbox.scrollTop = chatbox.scrollHeight;
+      })
+      .catch((error) => {
+        console.error("Error calling your own API:", error);
+      });
+  }
+  // Add the chat form submission handler to the chat form
+document.getElementById("chat-form").addEventListener("submit", function (event) {
+  event.preventDefault();
+  var messageInput = document.getElementById("chat-input");
+  var message = messageInput.value;
+  messageInput.value = "";
+  var previousQuestionsAndAnswers = [];
+  var chatbox = document.getElementById("chatbox");
+  var div = document.createElement("div");
+  div.classList.add("chat-user");
+  div.textContent = message;
+  chatbox.appendChild(div);
+  chatbot(previousQuestionsAndAnswers, message);
+});
+
+    </script>
+  </body>
+</html>
